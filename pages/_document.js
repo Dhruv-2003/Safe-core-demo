@@ -1,4 +1,9 @@
-import { Html, Head, Main, NextScript } from 'next/document'
+import { Html, Head, Main, NextScript } from "next/document";
+import {
+  SafeAuthKit,
+  SafeAuthProviderType,
+  SafeAuthEvents,
+} from "@safe-global/auth-kit";
 
 export default function Document() {
   return (
@@ -9,5 +14,5 @@ export default function Document() {
         <NextScript />
       </body>
     </Html>
-  )
+  );
 }

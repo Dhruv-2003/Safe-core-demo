@@ -1,11 +1,103 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from '@next/font/google'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import Image from "next/image";
+import { Inter } from "@next/font/google";
+import styles from "../styles/Home.module.css";
+import {
+  SafeAuthKit,
+  SafeAuthProviderType,
+  SafeAuthEvents,
+} from "@safe-global/auth-kit";
 
-const inter = Inter({ subsets: ['latin'] })
+import { useEffect, useState } from "react";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export default function Home() {
+  const [safeAuth, setSafeAuth] = useState();
+  const [provider, setProvider] = useState();
+  const [safeAuthSigninResponse, setsafeAuthSigninResponse] = useState();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const safeAuthKit = await SafeAuthKit.init(
+        SafeAuthProviderType.Web3Auth,
+        {
+          chainId: "0x5",
+          authProviderConfig: {
+            rpcTarget:
+              "https://polygon-mumbai.g.alchemy.com/v2/bZFiL-IFAMe4QAh9Q30gDQ7m1vxEss4u", // Add your RPC e.g. https://goerli.infura.io/v3/<your project id>
+            clientId:
+              "BI2SkFVRuQr8TqLoicvYRQivxyw8HL7FtfKok4VQXKhQ4V38pop3yLJhFQEphRfee3bGNG5u_wqfwePZsijnpcg", // Add your client id. Get it from the Web3Auth dashboard
+            network: "testnet" | "mainnet", // The network to use for the Web3Auth modal. Use 'testnet' while developing and 'mainnet' for production use
+            theme: "light" | "dark", // The theme to use for the Web3Auth modal
+            modalConfig: {
+              // The modal config is  optional and it's used to customize the Web3Auth modal
+              // Check the Web3Auth documentation for more info: https://web3auth.io/docs/sdk/web/modal/whitelabel#initmodal
+            },
+          },
+        }
+      );
+
+      safeAuthKit.subscribe(SafeAuthEvents.SIGNED_IN, () => {
+        console.log("User is authenticated");
+      });
+
+      safeAuthKit.subscribe(SafeAuthEvents.SIGNED_OUT, () => {
+        console.log("User is not authenticated");
+      });
+
+      setSafeAuth(safeAuthKit);
+      console.log(safeAuthKit);
+    })();
+  }, []);
+
+  const login = async () => {
+    try {
+      console.log("Loginigg in ");
+      console.log(safeAuth);
+      if (!safeAuth) {
+        console.log("SafeAuthNot found");
+        return;
+      }
+      const response = await safeAuth.signIn();
+      console.log("SIGN IN RESPONSE: ", response);
+
+      setsafeAuthSigninResponse(response);
+      setProvider(safeAuth.getProvider());
+      setIsLoggedIn(true);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const logout = async () => {
+    console.log(safeAuth);
+    if (!safeAuth) {
+      console.log("SafeAuthNot found");
+      return;
+    }
+
+    await safeAuth.signOut();
+
+    setProvider(null);
+    setsafeAuthSigninResponse(null);
+  };
+
+  const performTransaction = async () => {
+    const provider = new ethers.providers.Web3Provider(safeAuth.getProvider());
+    const signer = provider.getSigner();
+
+    // for sending the Transaction
+    await signer.sendTransaction(tx);
+
+    // for signing the Transaction
+    await signer.signTransaction(tx);
+
+    // for signing the message
+    await signer.signMessage(message);
+  };
+
   return (
     <>
       <Head>
@@ -16,108 +108,21 @@ export default function Home() {
       </Head>
       <main className={styles.main}>
         <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.js</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
+          <p>Safe Auth Kit demo</p>
+
+          {safeAuthSigninResponse?.eoa && (
+            <p>Owner Account : {safeAuthSigninResponse.eoa}</p>
+          )}
         </div>
 
         <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
+          {isLoggedIn ? (
+            <button onClick={logout}>logout</button>
+          ) : (
+            <button onClick={login}>Login</button>
+          )}
         </div>
       </main>
     </>
-  )
+  );
 }
